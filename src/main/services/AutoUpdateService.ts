@@ -3,6 +3,7 @@ import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import { spawn } from 'child_process';
 import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
 
 export interface UpdateStatusPayload {
@@ -102,7 +103,7 @@ export class AutoUpdateService {
     ipcMain.handle(IPC_CHANNELS.UPDATE_INSTALL, () => {
       if (process.platform === 'darwin' && this.downloadedDmgPath) {
         if (fs.existsSync(this.downloadedDmgPath)) {
-          shell.openPath(this.downloadedDmgPath);
+          this.installMacUpdateAndRelaunch(this.downloadedDmgPath);
         } else {
           shell.openExternal('https://github.com/HasanSert57/stok-takip/releases/latest');
         }
@@ -111,6 +112,56 @@ export class AutoUpdateService {
       }
       return { success: true };
     });
+  }
+
+  /**
+   * Automatic background installer script for macOS when unsigned DMG/ZIP is downloaded.
+   * Replaces /Applications/Kodhanem Stok Takip Programı.app cleanly and relaunches.
+   */
+  private static installMacUpdateAndRelaunch(filePath: string): void {
+    const { execPath } = process;
+    let targetAppPath = '/Applications/Kodhanem Stok Takip Programı.app';
+    if (execPath.includes('.app/Contents/MacOS/')) {
+      targetAppPath = execPath.substring(0, execPath.indexOf('.app') + 4);
+    }
+
+    const scriptPath = path.join(app.getPath('temp'), 'update_mac_stok.sh');
+
+    const scriptContent = `#!/bin/bash
+sleep 1
+MOUNT_POINT=$(mktemp -d /tmp/stok_update_XXXXXX)
+
+if [[ "${filePath}" == *.dmg ]]; then
+  hdiutil attach "${filePath}" -mountpoint "$MOUNT_POINT" -nobrowse -quiet
+elif [[ "${filePath}" == *.zip ]]; then
+  unzip -q -o "${filePath}" -d "$MOUNT_POINT"
+fi
+
+SOURCE_APP=$(find "$MOUNT_POINT" -maxdepth 2 -name "*.app" | head -n 1)
+
+if [ -n "$SOURCE_APP" ]; then
+  rm -rf "${targetAppPath}"
+  cp -R "$SOURCE_APP" "${targetAppPath}"
+  if [[ "${filePath}" == *.dmg ]]; then
+    hdiutil detach "$MOUNT_POINT" -quiet || true
+  fi
+  rm -rf "$MOUNT_POINT"
+  open "${targetAppPath}"
+fi
+`;
+
+    try {
+      fs.writeFileSync(scriptPath, scriptContent, { mode: 0o755 });
+      const child = spawn('/bin/bash', [scriptPath], {
+        detached: true,
+        stdio: 'ignore',
+      });
+      child.unref();
+      app.quit();
+    } catch (e) {
+      console.error('Failed to launch Mac auto update script:', e);
+      shell.openPath(filePath);
+    }
   }
 
   /**
