@@ -71,7 +71,8 @@ export const IPC_CHANNELS = {
   SETTINGS_GET: 'settings:get',
   SETTINGS_UPDATE: 'settings:update',
 
-  // License & Hardware Lock
+  // App & License
+  APP_GET_VERSION: 'app:getVersion',
   LICENSE_GET_STATUS: 'license:getStatus',
   LICENSE_ACTIVATE: 'license:activate',
   LICENSE_GENERATE_KEY: 'license:generateKey',

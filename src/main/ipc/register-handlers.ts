@@ -1,4 +1,4 @@
-import { ipcMain, dialog } from 'electron';
+import { ipcMain, dialog, app } from 'electron';
 import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
 import { ApiResponse } from '../../shared/types';
 import { ProductService } from '../services/ProductService';
@@ -334,7 +334,11 @@ export function registerIpcHandlers(): void {
     return true;
   }));
 
-  // --- LICENSE & HARDWARE LOCK ---
+  // --- APP & LICENSE ---
+  ipcMain.handle(IPC_CHANNELS.APP_GET_VERSION, wrapHandler(async () => {
+    return app.getVersion();
+  }));
+
   ipcMain.handle(IPC_CHANNELS.LICENSE_GET_STATUS, wrapHandler(async () => {
     return LicenseService.getStatus();
   }));

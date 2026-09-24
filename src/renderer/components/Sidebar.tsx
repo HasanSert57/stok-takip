@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp, TabType } from '../context/AppContext';
+import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
 import {
   LayoutDashboard,
   Package,
@@ -27,6 +28,17 @@ interface NavItem {
 
 export const Sidebar: React.FC = () => {
   const { activeTab, setActiveTab } = useApp();
+  const [appVersion, setAppVersion] = useState<string>('1.0.0');
+
+  useEffect(() => {
+    if (window.electronAPI?.invoke) {
+      window.electronAPI.invoke(IPC_CHANNELS.APP_GET_VERSION).then((res) => {
+        if (res && res.success && res.data) {
+          setAppVersion(res.data);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Özet Ekranı', icon: <LayoutDashboard size={18} /> },
@@ -56,7 +68,7 @@ export const Sidebar: React.FC = () => {
             Kodhanem Stok
           </h2>
           <span className="text-[11px] font-semibold text-indigo-600">
-            v1.0 Ticari Sürüm
+            v{appVersion} Ticari Sürüm
           </span>
         </div>
       </div>
