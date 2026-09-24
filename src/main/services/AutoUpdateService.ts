@@ -43,10 +43,19 @@ export class AutoUpdateService {
 
     autoUpdater.on('error', (err: Error) => {
       console.warn('AutoUpdate Error:', err);
+      const isMacCodeSignError = process.platform === 'darwin' && (err.message?.includes('Code signature') || err.message?.includes('validation'));
+      
       this.broadcastStatus({
         status: 'ERROR',
-        error: err.message || 'Güncelleme kontrolü sırasında hata oluştu.',
+        error: isMacCodeSignError
+          ? 'macOS Güvenlik: Sertifikasız Mac sürümünde otomatik uygulama değişimi engellendi. İndirme sayfasına yönlendiriliyorsunuz.'
+          : err.message || 'Güncelleme kontrolü sırasında hata oluştu.',
       });
+
+      if (isMacCodeSignError) {
+        const { shell } = require('electron');
+        shell.openExternal('https://github.com/HasanSert57/stok-takip/releases/latest');
+      }
     });
 
     autoUpdater.on('download-progress', (progressObj: ProgressInfo) => {

@@ -1,6 +1,6 @@
 {
   "name": "kodhanem-stok",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Kodhanem Stok Takip Programı — Cross-Platform Inventory, Sales & POS Management",
   "main": "dist/main/index.js",
   "scripts": {
