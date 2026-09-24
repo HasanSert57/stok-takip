@@ -1,0 +1,53 @@
+{
+  $schema: "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  appId: "com.kodhanem.stok",
+  productName: "Kodhanem Stok Takip Programı",
+  copyright: "Copyright © 2026 Kodhanem Stok",
+  directories: {
+    output: "release",
+    buildResources: "build"
+  },
+  files: [
+    "dist/**/*"
+  ],
+  asar: true,
+  asarUnpack: [
+    "**/node_modules/better-sqlite3/**/*"
+  ],
+  mac: {
+    category: "public.app-category.business",
+    icon: "build/icon.png",
+    target: [
+      {
+        target: "dmg",
+        arch: ["x64", "arm64"]
+      },
+      {
+        target: "zip",
+        arch: ["x64", "arm64"]
+      }
+    ],
+    artifactName: "Kodhanem-Stok-Takip-${version}-${os}-${arch}.${ext}"
+  },
+  win: {
+    icon: "build/icon.png",
+    target: [
+      {
+        target: "nsis",
+        arch: ["x64"]
+      }
+    ],
+    artifactName: "Kodhanem-Stok-Takip-Setup.${ext}"
+  },
+  nsis: {
+    oneClick: false,
+    perMachine: true,
+    allowElevation: true,
+    allowToChangeInstallationDirectory: true,
+    createDesktopShortcut: "always",
+    createStartMenuShortcut: true,
+    shortcutName: "Kodhanem Stok Takip Programı",
+    uninstallDisplayName: "Kodhanem Stok Takip Programı Kaldır",
+    runAfterFinish: false
+  }
+}

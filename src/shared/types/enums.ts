@@ -1,0 +1,30 @@
+export enum PaymentType {
+  CASH = 'CASH',
+  CARD = 'CARD',
+  TRANSFER = 'TRANSFER',
+  OTHER = 'OTHER',
+}
+
+export enum SaleStatus {
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  PARTIALLY_RETURNED = 'PARTIALLY_RETURNED',
+  RETURNED = 'RETURNED',
+}
+
+export enum StockMovementType {
+  INITIAL = 'INITIAL',
+  PURCHASE = 'PURCHASE',
+  SALE = 'SALE',
+  RETURN = 'RETURN',
+  CANCEL = 'CANCEL',
+  ADJUSTMENT_IN = 'ADJUSTMENT_IN',
+  ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',
+}
+
+export enum PriceChangeType {
+  MANUAL = 'MANUAL',
+  PERCENTAGE = 'PERCENTAGE',
+  FIXED_AMOUNT = 'FIXED_AMOUNT',
+  COST_MARGIN = 'COST_MARGIN',
+}
