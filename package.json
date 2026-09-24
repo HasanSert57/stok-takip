@@ -40,6 +40,7 @@
     "better-sqlite3": "^11.8.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.4",
+    "electron-updater": "^6.8.9",
     "jsbarcode": "^3.11.6",
     "lucide-react": "^0.474.0",
     "papaparse": "^5.5.2",

@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { Toast } from './components/Toast';
 import { FirstRunModal } from './components/FirstRunModal';
 import { LicenseModal } from './components/license/LicenseModal';
+import { UpdateNotification } from './components/UpdateNotification';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { IPC_CHANNELS } from '../shared/constants/ipc-channels';
 
@@ -150,6 +151,7 @@ const MainLayout: React.FC = () => {
         </div>
       </main>
       <Toast />
+      <UpdateNotification />
       <FirstRunModal isOpen={isFirstRun} onComplete={() => setIsFirstRun(false)} />
     </div>
   );

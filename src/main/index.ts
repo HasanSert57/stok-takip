@@ -3,6 +3,7 @@ import path from 'path';
 import { runMigrations } from './database/migration';
 import { closeDatabase } from './database/connection';
 import { registerIpcHandlers } from './ipc/register-handlers';
+import { AutoUpdateService } from './services/AutoUpdateService';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -13,20 +14,6 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection in Main Process:', reason);
 });
-
-function checkAutoUpdate(): void {
-  if (app.isPackaged) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { autoUpdater } = require('electron-updater');
-      autoUpdater.checkForUpdatesAndNotify().catch((err: any) => {
-        console.log('Auto update check skipped:', err?.message || err);
-      });
-    } catch {
-      // Auto-updater optional placeholder until update feed server URL is configured
-    }
-  }
-}
 
 async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow({
@@ -62,8 +49,15 @@ app.whenReady().then(async () => {
   }
 
   registerIpcHandlers();
+  AutoUpdateService.init();
+
   await createWindow();
-  checkAutoUpdate();
+
+  if (app.isPackaged) {
+    setTimeout(() => {
+      AutoUpdateService.checkForUpdates();
+    }, 4000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -75,6 +75,12 @@ export const IPC_CHANNELS = {
   LICENSE_GET_STATUS: 'license:getStatus',
   LICENSE_ACTIVATE: 'license:activate',
   LICENSE_GENERATE_KEY: 'license:generateKey',
+
+  // Auto Update
+  UPDATE_CHECK: 'update:check',
+  UPDATE_DOWNLOAD: 'update:download',
+  UPDATE_INSTALL: 'update:install',
+  UPDATE_STATUS: 'update:status',
 } as const;
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS];
