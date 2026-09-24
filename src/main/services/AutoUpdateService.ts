@@ -114,73 +114,98 @@ export class AutoUpdateService {
   }
 
   /**
-   * Directly downloads the .dmg installer for macOS with progress reporting, bypassing Squirrel.mac code signing restrictions
+   * Directly downloads the .dmg or .zip installer for macOS with progress reporting via GitHub API
    */
   private static async downloadMacDmgDirectly(): Promise<void> {
-    const archStr = process.arch === 'arm64' ? 'arm64' : 'x64';
-    const version = this.latestVersion || '1.0.1';
-    const filename = `Kodhanem-Stok-Takip-${version}-mac-${archStr}.dmg`;
-    const downloadUrl = `https://github.com/HasanSert57/stok-takip/releases/download/v${version}/${filename}`;
-
-    const downloadsDir = app.getPath('downloads');
-    const targetPath = path.join(downloadsDir, filename);
-    this.downloadedDmgPath = targetPath;
-
     this.broadcastStatus({ status: 'DOWNLOADING', progress: 5 });
 
+    const releaseApiUrl = 'https://api.github.com/repos/HasanSert57/stok-takip/releases/latest';
+
     return new Promise((resolve, reject) => {
-      const fetchFile = (url: string) => {
-        https.get(url, { headers: { 'User-Agent': 'Electron-App' } }, (res) => {
-          // Handle 301 / 302 redirects (GitHub Release downloads redirect to AWS S3)
-          if (res.statusCode === 301 || res.statusCode === 302) {
-            if (res.headers.location) {
-              fetchFile(res.headers.location);
+      https.get(releaseApiUrl, { headers: { 'User-Agent': 'Electron-App' } }, (res) => {
+        let rawData = '';
+        res.on('data', (chunk) => {
+          rawData += chunk;
+        });
+        res.on('end', () => {
+          try {
+            const releaseData = JSON.parse(rawData);
+            const assets: any[] = releaseData.assets || [];
+
+            const archStr = process.arch === 'arm64' ? 'arm64' : 'x64';
+            let targetAsset = assets.find((a) => a.name && a.name.endsWith('.dmg') && a.name.includes(archStr));
+            if (!targetAsset) {
+              targetAsset = assets.find((a) => a.name && a.name.endsWith('.zip') && a.name.includes(archStr));
+            }
+            if (!targetAsset) {
+              targetAsset = assets.find((a) => a.name && (a.name.endsWith('.dmg') || a.name.endsWith('.zip')));
+            }
+
+            if (!targetAsset || !targetAsset.browser_download_url) {
+              reject(new Error('GitHub Release üzerinde uygun Mac indirme paketi (.dmg / .zip) bulunamadı.'));
               return;
             }
-          }
 
-          if (res.statusCode !== 200) {
-            reject(new Error(`İndirme sunucusu yanıt vermedi (HTTP ${res.statusCode})`));
-            return;
-          }
+            const downloadUrl = targetAsset.browser_download_url;
+            const filename = targetAsset.name;
+            const downloadsDir = app.getPath('downloads');
+            const targetPath = path.join(downloadsDir, filename);
+            this.downloadedDmgPath = targetPath;
 
-          const totalSize = parseInt(res.headers['content-length'] || '0', 10);
-          let downloadedSize = 0;
-          const fileStream = fs.createWriteStream(targetPath);
+            const fetchFile = (url: string) => {
+              https.get(url, { headers: { 'User-Agent': 'Electron-App' } }, (dlRes) => {
+                if (dlRes.statusCode === 301 || dlRes.statusCode === 302) {
+                  if (dlRes.headers.location) {
+                    fetchFile(dlRes.headers.location);
+                    return;
+                  }
+                }
 
-          res.on('data', (chunk) => {
-            downloadedSize += chunk.length;
-            const percent = totalSize > 0 ? Math.round((downloadedSize / totalSize) * 100) : 50;
-            this.broadcastStatus({
-              status: 'DOWNLOADING',
-              progress: percent,
-              transferred: downloadedSize,
-              total: totalSize,
-            });
-          });
+                if (dlRes.statusCode !== 200) {
+                  reject(new Error(`İndirme sunucusu yanıt vermedi (HTTP ${dlRes.statusCode})`));
+                  return;
+                }
 
-          res.pipe(fileStream);
+                const totalSize = parseInt(dlRes.headers['content-length'] || '0', 10);
+                let downloadedSize = 0;
+                const fileStream = fs.createWriteStream(targetPath);
 
-          fileStream.on('finish', () => {
-            fileStream.close();
-            this.broadcastStatus({
-              status: 'DOWNLOADED',
-              version,
-              dmgPath: targetPath,
-            });
-            resolve();
-          });
+                dlRes.on('data', (chunk) => {
+                  downloadedSize += chunk.length;
+                  const percent = totalSize > 0 ? Math.round((downloadedSize / totalSize) * 100) : 50;
+                  this.broadcastStatus({
+                    status: 'DOWNLOADING',
+                    progress: percent,
+                    transferred: downloadedSize,
+                    total: totalSize,
+                  });
+                });
 
-          fileStream.on('error', (err) => {
-            fs.unlink(targetPath, () => {});
+                dlRes.pipe(fileStream);
+
+                fileStream.on('finish', () => {
+                  fileStream.close();
+                  this.broadcastStatus({
+                    status: 'DOWNLOADED',
+                    version: releaseData.tag_name || this.latestVersion || 'Yeni Versiyon',
+                    dmgPath: targetPath,
+                  });
+                  resolve();
+                });
+
+                fileStream.on('error', (err) => {
+                  fs.unlink(targetPath, () => {});
+                  reject(err);
+                });
+              }).on('error', (err) => reject(err));
+            };
+
+            fetchFile(downloadUrl);
+          } catch (err: any) {
             reject(err);
-          });
-        }).on('error', (err) => {
-          reject(err);
+          }
         });
-      };
-
-      fetchFile(downloadUrl);
+      }).on('error', (err) => reject(err));
     });
   }
 
